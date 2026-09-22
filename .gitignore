@@ -1,0 +1,50 @@
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Django
+*.sqlite3
+media/
+staticfiles/
+
+# Node / React
+node_modules/
+dist/
+build/
+.npm/
+*.log
+
+# Rasa
+.rasa/
+models/
+logs/
+
+# IDE / editors
+.idea/
+.vscode/
+*.iml
+
+# macOS
+.DS_Store
+
+# Generated documents / local data
+*.pdf
+*.tmp
+*.temp
+
+# Secrets / keys
+*.pem
+*.key
+*.crt
