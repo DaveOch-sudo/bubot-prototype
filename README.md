@@ -1375,3 +1375,430 @@ The completed prototype should make the following demonstration possible:
 ```
 
 That complete flow is the core proof-of-concept for BuBot.
+
+## Development Environment Setup
+
+This section describes the standard development environment and setup process for the BuBot prototype. Every team member should follow these steps before working on their assigned component.
+
+### 1. Prerequisites
+
+Install the following before setting up the project:
+
+- Git
+- Python 3.10 or later
+- Node.js 20 or later
+- npm
+- PostgreSQL 16
+- PostgreSQL command-line tools
+- A code editor such as VS Code
+
+Docker is **not required** for the BuBot prototype.
+
+### 2. Clone the Repository
+
+Clone the project from GitHub:
+
+```bash
+git clone <REPOSITORY_URL>
+cd bubot-prototype
+```
+
+Check the repository status:
+
+```bash
+git status
+```
+
+The working tree should be clean after cloning.
+
+### 3. Python Virtual Environment
+
+From the project root, create the shared project-level Python virtual environment:
+
+```bash
+python3 -m venv .venv
+```
+
+Activate it:
+
+```bash
+source .venv/bin/activate
+```
+
+Upgrade the Python packaging tools:
+
+```bash
+python -m pip install --upgrade pip setuptools wheel
+```
+
+The virtual environment should be activated whenever working with the Django backend or AI components.
+
+### 4. Backend Setup
+
+Move into the backend directory:
+
+```bash
+cd backend
+```
+
+Install the backend dependencies:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+The backend uses Django, Django REST Framework, PostgreSQL and the PostgreSQL Python driver.
+
+### 5. Environment Configuration
+
+Return to the project root:
+
+```bash
+cd ..
+```
+
+Create the local environment file:
+
+```bash
+cp .env.example .env
+```
+
+Open `.env` and provide the values required for the local environment.
+
+Example:
+
+```env
+DJANGO_SECRET_KEY=
+DEBUG=True
+DATABASE_URL=
+RASA_URL=
+NVIDIA_API_KEY=
+NVIDIA_MODEL=
+DB_PASSWORD=
+```
+
+The `.env` file is for local development only and must **never be committed to Git**.
+
+Do not put API keys, passwords, tokens or other secrets into source code.
+
+### 6. PostgreSQL Database
+
+Create a PostgreSQL database and dedicated application user for BuBot.
+
+Example:
+
+```sql
+CREATE USER bubot_user WITH PASSWORD 'your_password';
+CREATE DATABASE bubot OWNER bubot_user;
+GRANT ALL PRIVILEGES ON DATABASE bubot TO bubot_user;
+```
+
+The password used for the database user should be placed in the local `.env` file:
+
+```env
+DB_PASSWORD=your_password
+```
+
+The application should use the dedicated `bubot_user` account rather than the PostgreSQL administrator account.
+
+### 7. Enable pgvector
+
+Connect to the `bubot` database using a PostgreSQL administrator account and enable the pgvector extension:
+
+```sql
+\c bubot
+
+CREATE EXTENSION IF NOT EXISTS vector;
+```
+
+Verify that the extension is available:
+
+```sql
+SELECT extversion
+FROM pg_extension
+WHERE extname = 'vector';
+```
+
+The `vector` extension is required for the project's semantic-vector storage and retrieval layer.
+
+### 8. Run Django Migrations
+
+From the project root:
+
+```bash
+cd backend
+python manage.py migrate
+```
+
+If the command completes successfully, the Django application can communicate with the PostgreSQL database.
+
+### 9. Start the Django Backend
+
+From the `backend` directory:
+
+```bash
+python manage.py runserver
+```
+
+The development server should start locally.
+
+The initial health endpoint is:
+
+```text
+/api/health/
+```
+
+Open:
+
+```text
+http://127.0.0.1:8000/api/health/
+```
+
+Expected response:
+
+```json
+{
+  "status": "ok",
+  "service": "bubot-backend"
+}
+```
+
+Stop the server with:
+
+```text
+Ctrl + C
+```
+
+### 10. Frontend Setup
+
+Open another terminal and move to the project root:
+
+```bash
+cd bubot-prototype/frontend
+```
+
+Install the JavaScript dependencies:
+
+```bash
+npm install
+```
+
+Start the React development server:
+
+```bash
+npm run dev
+```
+
+Vite will display the local development URL in the terminal.
+
+The frontend must communicate with Django rather than communicating directly with Rasa or the NVIDIA API.
+
+### 11. Rasa
+
+Rasa is part of the BuBot architecture, but it is **not installed during the initial project foundation setup**.
+
+The `rasa/` directory currently serves as the integration location for the Rasa component.
+
+Rasa-specific dependencies and configuration will be added when the Rasa component is implemented.
+
+### 12. AI Module
+
+The `ai/` directory contains the AI and RAG components of the project.
+
+Current structure:
+
+```text
+ai/
+├── __init__.py
+├── llm/
+│   └── __init__.py
+├── orchestration/
+│   └── __init__.py
+└── rag/
+    ├── __init__.py
+    ├── ingestion/
+    │   └── __init__.py
+    ├── chunking/
+    │   └── __init__.py
+    ├── embeddings/
+    │   └── __init__.py
+    ├── retrieval/
+    │   └── __init__.py
+    └── generation/
+        └── __init__.py
+```
+
+The AI module is intentionally separated from Django views. AI orchestration, RAG processing, embeddings, retrieval and generation logic should be implemented inside this module.
+
+The LLM integration should use the planned provider abstraction:
+
+```text
+LLMProvider
+    ↓
+NVIDIAProvider
+```
+
+This keeps the orchestration layer independent of a specific NVIDIA model or provider implementation.
+
+### 13. Project Structure
+
+The main project structure is:
+
+```text
+bubot-prototype/
+├── frontend/
+├── backend/
+├── rasa/
+├── ai/
+│   ├── llm/
+│   ├── orchestration/
+│   └── rag/
+│       ├── ingestion/
+│       ├── chunking/
+│       ├── embeddings/
+│       ├── retrieval/
+│       └── generation/
+├── documents/
+├── scripts/
+├── tests/
+├── .env.example
+├── .gitignore
+├── README.md
+└── TEAM_DEVELOPMENT.md
+```
+
+### 14. Git Workflow
+
+The `main` branch contains the shared stable project state.
+
+Developers should create feature branches before making changes.
+
+Example:
+
+```bash
+git checkout main
+git pull origin main
+git checkout -b feature/<component>
+```
+
+Examples:
+
+```text
+feature/frontend
+feature/django
+feature/rasa
+feature/rag
+feature/llm
+```
+
+Commit changes regularly using clear commit messages:
+
+```bash
+git add .
+git commit -m "feat: add chat interface"
+```
+
+Push the feature branch:
+
+```bash
+git push -u origin feature/<component>
+```
+
+Changes should be merged into `main` through a Pull Request after review.
+
+Do not push unfinished experimental work directly to `main`.
+
+### 15. Keeping the Environment Consistent
+
+Before starting development each day, update the local repository:
+
+```bash
+git checkout main
+git pull origin main
+```
+
+Then return to the appropriate feature branch.
+
+When dependencies are added or changed, update the relevant dependency file so other team members can reproduce the environment.
+
+For Python backend dependencies:
+
+```bash
+cd backend
+python -m pip freeze > requirements.txt
+```
+
+For frontend dependencies, update `package.json` and `package-lock.json` through npm.
+
+### 16. Setup Verification Checklist
+
+A developer is ready to begin component development when the following checks pass:
+
+- [ ] Repository cloned successfully
+- [ ] Python virtual environment created and activated
+- [ ] Backend dependencies installed
+- [ ] `.env` created from `.env.example`
+- [ ] PostgreSQL is running
+- [ ] `bubot` database exists
+- [ ] `bubot_user` can access the database
+- [ ] pgvector extension is enabled
+- [ ] Django migrations complete successfully
+- [ ] Django health endpoint returns `status: ok`
+- [ ] Frontend dependencies installed
+- [ ] React development server starts
+- [ ] Rasa directory exists
+- [ ] AI module structure exists
+- [ ] No secrets are committed
+- [ ] Git branches and Pull Request workflow are understood
+
+### 17. Development Architecture
+
+The intended application flow is:
+
+```text
+User
+  ↓
+React
+  ↓
+Django
+  ↓
+Rasa
+  ↓
+AI / RAG Orchestration
+  ↓
+Relevant Institutional Knowledge
+  ↓
+NVIDIA-hosted LLM
+  ↓
+Grounded Response + Sources
+  ↓
+Rasa
+  ↓
+Django
+  ↓
+React
+```
+
+The knowledge pipeline is:
+
+```text
+Administrator
+  ↓
+University Document Upload
+  ↓
+Text Extraction
+  ↓
+Document Structure Detection
+  ↓
+Structure-aware Chunking
+  ↓
+Metadata Generation
+  ↓
+Embeddings
+  ↓
+PostgreSQL + pgvector
+  ↓
+Searchable Knowledge Base
+```
+
+This architecture is the agreed prototype direction. New components or architectural changes should be discussed with the team before being introduced.
