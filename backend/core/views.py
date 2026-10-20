@@ -2,8 +2,9 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 
-from .services.rasa_client import send_message
+from ai.orchestration.orchestrator import ChatOrchestrator
 
+orchestrator = ChatOrchestrator()
 
 def health(request):
     return JsonResponse({
@@ -38,11 +39,10 @@ def chat(request):
         )
 
     try:
-        rasa_response = send_message(sender, message)
-
+        answer = orchestrator.answer(message)
         return JsonResponse({
             "sender": sender,
-            "responses": rasa_response,
+            "response": answer,
         })
 
     except Exception as exc:
